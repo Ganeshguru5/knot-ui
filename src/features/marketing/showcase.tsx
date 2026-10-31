@@ -1,15 +1,14 @@
 "use client"
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import Image from "next/image"
 import {
   BriefcaseBusinessIcon,
   CalendarClockIcon,
-  CheckIcon,
   FolderOpenIcon,
   HandshakeIcon,
   LayoutDashboardIcon,
   LayoutTemplateIcon,
-  SearchIcon,
   UsersIcon,
   type LucideIcon,
 } from "lucide-react"
@@ -83,318 +82,24 @@ export function AppWindow({
 
 /* ------------------------------------------------------------ app chrome */
 
-const SIDEBAR: Array<{ icon: LucideIcon; label: string; scene?: SceneId }> = [
-  { icon: LayoutDashboardIcon, label: "Dashboard", scene: "dashboard" },
-  { icon: BriefcaseBusinessIcon, label: "Applications", scene: "pipeline" },
+const SIDEBAR: Array<{ icon: LucideIcon; label: string }> = [
+  { icon: LayoutDashboardIcon, label: "Dashboard" },
+  { icon: BriefcaseBusinessIcon, label: "Applications" },
   { icon: UsersIcon, label: "Contacts" },
-  { icon: HandshakeIcon, label: "Referrals", scene: "referrals" },
-  { icon: CalendarClockIcon, label: "Interviews", scene: "calendar" },
+  { icon: HandshakeIcon, label: "Referrals" },
+  { icon: CalendarClockIcon, label: "Interviews" },
   { icon: LayoutTemplateIcon, label: "Templates" },
   { icon: FolderOpenIcon, label: "Documents" },
 ]
 
-function AppFrame({ scene, title, children }: { scene: SceneId; title: string; children: React.ReactNode }) {
-  return (
-    <div className="flex h-[440px] bg-background sm:h-[480px]">
-      <aside className="hidden w-44 shrink-0 p-1.5 md:block">
-        <div className="glass flex h-full flex-col rounded-xl border p-2">
-          <p className="px-2 pb-2 pt-0.5 text-[9px] font-semibold tracking-[0.08em] text-muted-foreground/80 uppercase">Career</p>
-          {SIDEBAR.map((item) => (
-            <div
-              key={item.label}
-              className={cn(
-                "flex h-6 items-center gap-2 rounded-md px-2 text-[11px] text-sidebar-foreground/85 transition-colors duration-500",
-                item.scene === scene && "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
-              )}
-            >
-              <item.icon className={cn("size-3.5", item.scene === scene ? "text-brand" : "text-muted-foreground")} /> {item.label}
-            </div>
-          ))}
-        </div>
-      </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex h-11 shrink-0 items-center justify-between border-b border-foreground/[0.07] px-4">
-          <p className="text-[13px] font-semibold">{title}</p>
-          <div className="flex h-6 w-40 items-center gap-1.5 rounded-md bg-foreground/[0.06] px-2 text-[11px] text-muted-foreground dark:bg-white/[0.08]">
-            <SearchIcon className="size-3" /> Search
-            <span className="ml-auto">⌘K</span>
-          </div>
-        </div>
-        <div className="min-h-0 flex-1 overflow-hidden p-4">{children}</div>
-      </div>
-    </div>
-  )
-}
-
 /* --------------------------------------------------------------- scenes */
 
-type SceneId = "pipeline" | "dashboard" | "referrals" | "calendar"
-
-/** Ticks 0..steps-1 while `active`, every `interval` ms (stays at the end with reduced motion). */
-function useSteps(active: boolean, steps: number, interval: number, reduced: boolean) {
-  const [step, setStep] = useState(0)
-  useEffect(() => {
-    if (!active || reduced) return
-    const timers = Array.from({ length: steps - 1 }, (_, i) =>
-      window.setTimeout(() => setStep(i + 1), interval * (i + 1)),
-    )
-    return () => {
-      timers.forEach(window.clearTimeout)
-      setStep(0)
-    }
-  }, [active, steps, interval, reduced])
-  return reduced ? steps - 1 : step
-}
-
-function Card({ role, company, meta, flash }: { role: string; company: string; meta: string; flash?: boolean }) {
-  return (
-    <div
-      className={cn(
-        "rounded-lg border bg-card p-2.5 shadow-xs transition-all duration-500 animate-in fade-in slide-in-from-left-2",
-        flash && "border-brand/60 ring-2 ring-brand/20",
-      )}
-    >
-      <p className="truncate text-[11px] font-medium">{role}</p>
-      <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{company}</p>
-      <p className="mt-1.5 inline-flex rounded bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">{meta}</p>
-    </div>
-  )
-}
-
-function PipelineScene({ active, reduced }: { active: boolean; reduced: boolean }) {
-  // 0: start · 1: card picked up · 2: moved to Interview · 3: interview scheduled
-  const step = useSteps(active, 4, 1100, reduced)
-  const moved = step >= 2
-  const columns = [
-    { title: "Wishlist", color: "var(--chart-5)", cards: [{ role: "Product Engineer", company: "Lumen", meta: "Remote" }, { role: "Frontend Developer", company: "Paywise", meta: "Bengaluru" }] },
-    {
-      title: "Applied",
-      color: "var(--chart-1)",
-      cards: [
-        ...(moved ? [] : [{ role: "Senior Frontend", company: "Ledgerline", meta: step === 1 ? "Moving…" : "Referral" }]),
-        { role: "Software Engineer II", company: "Teamforge", meta: "3d ago" },
-        { role: "UI Engineer", company: "Tradewell", meta: "1w ago" },
-      ],
-    },
-    {
-      title: "Interview",
-      color: "var(--chart-2)",
-      cards: [
-        ...(moved ? [{ role: "Senior Frontend", company: "Ledgerline", meta: step >= 3 ? "Thu, 4:30 PM" : "Just now" }] : []),
-        { role: "Platform Engineer", company: "Relay API", meta: "Mon, 11:00 AM" },
-      ],
-    },
-    { title: "Offer", color: "var(--chart-3)", cards: [{ role: "Software Engineer", company: "Northwind Labs", meta: "Decide by Fri" }] },
-  ]
-  return (
-    <div className="grid h-full grid-cols-2 gap-2.5 lg:grid-cols-4">
-      {columns.map((column, index) => (
-        <div key={column.title} className={cn("rounded-xl bg-muted/50 p-2", index > 1 && "hidden lg:block")}>
-          <div className="mb-2 flex items-center gap-1.5 px-1 text-[10px] font-medium">
-            <span className="size-1.5 rounded-full" style={{ background: column.color }} />
-            {column.title}
-            <span className="ml-auto text-muted-foreground tabular-nums">{column.cards.length}</span>
-          </div>
-          <div className="space-y-2">
-            {column.cards.map((card) => (
-              <Card key={`${card.role}-${card.company}`} {...card} flash={card.company === "Ledgerline" && step >= 1} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function CountUp({ to, active, reduced }: { to: number; active: boolean; reduced: boolean }) {
-  const [value, setValue] = useState(0)
-  useEffect(() => {
-    if (!active || reduced) return
-    let frame = 0
-    const start = performance.now()
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / 900)
-      setValue(Math.round(to * (1 - (1 - t) ** 3)))
-      if (t < 1) frame = requestAnimationFrame(tick)
-    }
-    frame = requestAnimationFrame(tick)
-    return () => {
-      cancelAnimationFrame(frame)
-      setValue(0)
-    }
-  }, [active, reduced, to])
-  return <>{reduced ? to : value}</>
-}
-
-const WEEKS = [3, 5, 4, 7, 6, 9, 8, 11]
-
-function DashboardScene({ active, reduced }: { active: boolean; reduced: boolean }) {
-  const grown = useSteps(active, 2, 150, reduced) === 1
-  return (
-    <div className="flex h-full flex-col gap-3">
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        {[
-          { label: "Applications", value: 42 },
-          { label: "Interviews", value: 7 },
-          { label: "Referrals", value: 12 },
-          { label: "Offers", value: 2 },
-        ].map((tile) => (
-          <div key={tile.label} className="rounded-xl border bg-card p-3">
-            <p className="text-[10px] text-muted-foreground">{tile.label}</p>
-            <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-              <CountUp to={tile.value} active={active} reduced={reduced} />
-            </p>
-          </div>
-        ))}
-      </div>
-      <div className="flex min-h-0 flex-1 gap-2.5">
-        <div className="flex flex-1 flex-col rounded-xl border bg-card p-3">
-          <p className="text-[11px] font-medium">Applications per week</p>
-          <div className="mt-3 flex flex-1 items-end gap-2">
-            {WEEKS.map((n, i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                <div
-                  className="w-full rounded-t-md bg-brand/80 transition-[height] duration-700 ease-out"
-                  style={{ height: grown ? `${(n / 11) * 100}%` : "4%", transitionDelay: `${i * 60}ms` }}
-                />
-                <span className="text-[9px] text-muted-foreground">W{i + 1}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="hidden w-48 flex-col gap-2 rounded-xl border bg-card p-3 lg:flex">
-          <p className="text-[11px] font-medium">Up next</p>
-          {[
-            ["Technical interview", "Ledgerline · Thu 4:30 PM"],
-            ["Follow up", "Teamforge · Tomorrow"],
-            ["Referral nudge", "Maya Patel · Fri"],
-          ].map(([title, meta], i) => (
-            <div
-              key={title}
-              className="rounded-lg bg-muted/60 p-2 transition-all duration-500"
-              style={{ opacity: grown ? 1 : 0, transform: grown ? "none" : "translateY(6px)", transitionDelay: `${300 + i * 120}ms` }}
-            >
-              <p className="text-[10px] font-medium">{title}</p>
-              <p className="text-[9px] text-muted-foreground">{meta}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const MESSAGE =
-  "Hi Maya, I'm applying for the Senior Frontend role at Ledgerline and would love to connect. I'd really appreciate a referral if you think I'd be a good fit. Thank you!"
-
-function ReferralsScene({ active, reduced }: { active: boolean; reduced: boolean }) {
-  const [typed, setTyped] = useState(0)
-  useEffect(() => {
-    if (!active || reduced) return
-    const timer = window.setInterval(() => setTyped((n) => (n >= MESSAGE.length ? n : n + 2)), 28)
-    return () => {
-      window.clearInterval(timer)
-      setTyped(0)
-    }
-  }, [active, reduced])
-  const shown = reduced ? MESSAGE.length : typed
-  const done = shown >= MESSAGE.length
-  return (
-    <div className="flex h-full gap-3">
-      <div className="hidden flex-1 space-y-2 lg:block">
-        {[
-          { name: "Maya Patel", role: "Senior Frontend · Ledgerline", status: "Request sent", tone: "bg-brand/15 text-brand", active: true },
-          { name: "Jordan Reyes", role: "Platform Engineer · Relay API", status: "Accepted", tone: "bg-success/15 text-success" },
-          { name: "Elias Weber", role: "Software Engineer II · Teamforge", status: "Not contacted", tone: "bg-muted text-muted-foreground" },
-          { name: "Nina Kapoor", role: "UI Engineer · Tradewell", status: "Submitted", tone: "bg-success/15 text-success" },
-        ].map((r) => (
-          <div key={r.name} className={cn("flex items-center gap-2.5 rounded-xl border bg-card p-2.5", r.active && "border-brand/40")}>
-            <span className="flex size-7 items-center justify-center rounded-full bg-brand/15 text-[10px] font-semibold text-brand">
-              {r.name.split(" ").map((p) => p[0]).join("")}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[11px] font-medium">{r.name}</p>
-              <p className="truncate text-[10px] text-muted-foreground">{r.role}</p>
-            </div>
-            <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-medium", r.tone)}>{r.status}</span>
-          </div>
-        ))}
-      </div>
-      <div className="flex w-full flex-col rounded-xl border bg-card p-3 lg:w-72">
-        <p className="text-[11px] font-semibold">LinkedIn message to Maya Patel</p>
-        <p className="mt-0.5 text-[10px] text-muted-foreground">Template: Connection request · referral</p>
-        <div className="mt-2.5 flex-1 rounded-lg border bg-background p-2.5 text-[11px] leading-relaxed">
-          {MESSAGE.slice(0, shown)}
-          {!done && <span className="ml-px inline-block h-3 w-px translate-y-0.5 animate-pulse bg-foreground" />}
-        </div>
-        <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
-          <span className="tabular-nums">{shown} / 300</span>
-          <span
-            className={cn(
-              "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[10px] font-medium transition-colors",
-              done ? "bg-brand text-brand-foreground" : "bg-muted",
-            )}
-          >
-            {done && <CheckIcon className="size-3" />} {done ? "Copied" : "Copy & open LinkedIn"}
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const EVENTS = [
-  { day: 0, top: 18, height: 22, title: "Recruiter screen", meta: "Paywise", color: "bg-chart-3/20 border-chart-3/50" },
-  { day: 1, top: 52, height: 30, title: "Technical", meta: "Ledgerline", color: "bg-brand/15 border-brand/50" },
-  { day: 2, top: 8, height: 10, title: "Follow up", meta: "Teamforge", color: "bg-chart-2/20 border-chart-2/50" },
-  { day: 3, top: 34, height: 26, title: "System design", meta: "Relay API", color: "bg-chart-5/20 border-chart-5/50" },
-  { day: 4, top: 60, height: 20, title: "Final round", meta: "Northwind Labs", color: "bg-success/15 border-success/50" },
-]
-
-function CalendarScene({ active, reduced }: { active: boolean; reduced: boolean }) {
-  const step = useSteps(active, EVENTS.length + 1, 450, reduced)
-  return (
-    <div className="flex h-full flex-col">
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-[11px] font-medium">This week</p>
-        <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors", step >= EVENTS.length ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>
-          {step >= EVENTS.length ? <><CheckIcon className="size-3" /> Synced to Google Calendar</> : "Syncing…"}
-        </span>
-      </div>
-      <div className="grid flex-1 grid-cols-5 gap-1.5">
-        {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day, d) => (
-          <div key={day} className="relative rounded-lg bg-muted/40">
-            <p className="border-b border-foreground/[0.06] px-2 py-1 text-[10px] font-medium text-muted-foreground">{day}</p>
-            {EVENTS.filter((e) => e.day === d).map((event) => {
-              const shown = EVENTS.indexOf(event) < step
-              return (
-                <div
-                  key={event.title}
-                  className={cn("absolute inset-x-1 rounded-md border px-1.5 py-1 transition-all duration-500", event.color)}
-                  style={{
-                    top: `calc(${event.top}% + 1.5rem)`,
-                    height: `${event.height}%`,
-                    opacity: shown ? 1 : 0,
-                    transform: shown ? "none" : "scale(0.92)",
-                  }}
-                >
-                  <p className="truncate text-[9px] font-semibold">{event.title}</p>
-                  <p className="truncate text-[9px] text-muted-foreground">{event.meta}</p>
-                </div>
-              )
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-const SCENES: Array<{ id: SceneId; tab: string; title: string; caption: string; Component: typeof PipelineScene }> = [
-  { id: "pipeline", tab: "Pipeline", title: "Applications", caption: "Drag roles from wishlist to offer.", Component: PipelineScene },
-  { id: "dashboard", tab: "Dashboard", title: "Dashboard", caption: "See your week at a glance.", Component: DashboardScene },
-  { id: "referrals", tab: "Referrals", title: "Referrals", caption: "Message referrers from templates.", Component: ReferralsScene },
-  { id: "calendar", tab: "Calendar", title: "Interviews", caption: "Interviews land on your calendar.", Component: CalendarScene },
+/** Screenshots of the demo account on the light theme, 1920×1200. */
+const SCENES = [
+  { id: "pipeline", tab: "Pipeline", title: "Applications", caption: "Drag roles from wishlist to offer.", src: "/showcase/pipeline.webp" },
+  { id: "dashboard", tab: "Dashboard", title: "Dashboard", caption: "See your week at a glance.", src: "/showcase/dashboard.webp" },
+  { id: "referrals", tab: "Referrals", title: "Referrals", caption: "Know who's referring you, and when to nudge.", src: "/showcase/referrals.webp" },
+  { id: "interviews", tab: "Interviews", title: "Interviews", caption: "Every interview on one agenda.", src: "/showcase/interviews.webp" },
 ]
 
 const SCENE_MS = 5600
@@ -417,12 +122,20 @@ export function AppShowcase({ className }: { className?: string }) {
   return (
     <div ref={ref} className={cn("relative mx-auto mt-16 max-w-5xl", className)} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       <div aria-hidden className="absolute -inset-x-6 -bottom-6 top-10 rounded-[2rem] bg-gradient-to-b from-brand/25 to-transparent blur-2xl" />
-      <AppWindow title={`IamCandidate — ${scene.title}`} className="relative" bodyClassName="relative">
-        <AppFrame scene={scene.id} title={scene.title}>
-          <div key={scene.id} className="h-full animate-in fade-in duration-500">
-            <scene.Component active={inView} reduced={reduced} />
-          </div>
-        </AppFrame>
+      <AppWindow title={`IamCandidate — ${scene.title}`} className="relative" bodyClassName="relative aspect-[16/10] bg-background">
+        {/* All four stay mounted so switching tabs cross-fades without a load. */}
+        {SCENES.map((s, i) => (
+          <Image
+            key={s.id}
+            src={s.src}
+            alt={`The IamCandidate ${s.title} screen, with demo data`}
+            fill
+            sizes="(min-width: 1024px) 1024px, 100vw"
+            priority={i === 0}
+            aria-hidden={i !== index}
+            className={cn("object-cover object-top transition-opacity duration-500", i === index ? "opacity-100" : "opacity-0")}
+          />
+        ))}
       </AppWindow>
 
       <div className="relative mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4" role="tablist" aria-label="App tour">
